@@ -9,20 +9,18 @@ $avgUp = [Math]::Ceiling($avg)
 $avgDown = [Math]::Floor($avg)
 
 $fuelUp = 0
+$fuelDown = 0
+
 $positions.ForEach{
     $posChange = [Math]::Abs($($avgUp - $_))
     $fuelUsed = $posChange*($posChange+1)/2
-    #Write-Host "Move from $_ to $avg ($posChange) for $fuelUsed"
     $fuelUp += $fuelUsed
-}
 
-$fuelDown = 0
-$positions.ForEach{
     $posChange = [Math]::Abs($($avgDown - $_))
     $fuelUsed = $posChange*($posChange+1)/2
-    #Write-Host "Move from $_ to $avg ($posChange) for $fuelUsed"
     $fuelDown += $fuelUsed
 }
+
 
 $fuel = [Math]::Min($fuelUp, $fuelDown)
 
