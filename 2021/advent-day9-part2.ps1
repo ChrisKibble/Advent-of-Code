@@ -2,17 +2,6 @@
 
 Get-Variable | Remove-Variable -ErrorAction SilentlyContinue
 
-Function DrawGrid {
-    Param(
-        [System.Collections.ArrayList]$grid
-    )
-
-    For($line = 0; $line -lt $grid.Count; $line++) {
-        Write-Host $($grid[$line] -join "")
-    }
-}
-
-
 $dataIn = @"
 2199943210
 3987894921
@@ -24,84 +13,175 @@ $dataIn = @"
 $dataIn = Get-Content "$PSScriptRoot\Day9-Input.txt"
 
 $grid = New-Object System.Collections.ArrayList
-$basinMembers = New-Object System.Collections.ArrayList
+$lowPoints = New-Object System.Collections.ArrayList
+
+$dataIn.ForEach{
+    [void]$grid.Add($_.ToCharArray())
+}
 
 
-# Build our grid
-$dataIn.ForEach{ [void]$grid.Add($_.ToCharArray().ForEach{ [String]$_ -as [Int] }) }
-
-
+# Find horizonal possibilities
 
 $rowNumber = 0
+
 ForEach($line in $dataIn) {
-    $readings = $line
+    $readings = $line.ToCharArray()
     
-    For ($c = 0; $c -lt $line.Length; $c++) {
-        $val = $grid[$rowNumber][$c]
+    #$readings
+
+    For($i = 0; $i -lt $readings.Length; $i++) {
         
-        If([int]$val -lt 9) {
-            [void]$basinMembers.Add(
+        $x = $false
+        if($i -eq 0 -and $readings[$i] -lt $readings[$i+1] ) { 
+            # Left most column
+            $x = $true 
+        } elseif( $i -eq $($readings.Length-1) -and $readings[$i] -lt $readings[$i-1]) {
+            $x = $true
+            # Right Most column
+        } else {
+            # Somewhere middle
+            if($readings[$i] -lt $readings[$i-1] -and $readings[$i] -lt $readings[$i+1]) {
+                $x = $true
+            }
+        }
+
+        if($x) { 
+            [Void]$lowPoints.Add(
                 [PSCustomObject]@{
                     "Line" = $rowNumber
-                    "Col" = $c
-                    "Reading" = $val
-                    "MemberId" = "$rowNumber,$c"
-                    "BasinId" = $null
+                    "Column" = $i
+                    "Reading" = [String]$readings[$i] -as [Int]  # Converts Char to Int
+                    "Confirmed" = $false
                 }
             )
         }
-
+    
     }
-
+    
     $rowNumber++
 }
 
-# Get Next Number Not Member of Basin
+# Remove possibilities that don't match vertically
 
-#$basinStart = $basinMembers.where{ $null -eq $_.BasinId } | Select -First 1
-
-#$basinId = New-Guid
-
-#$basinMembers.where{ $_.MemberId -eq $basinStart.MemberId }[0].BasinId = $basinId
-
-## Write-Host "Starting with $($basinStart.Line),$($basinStart.Col) with Value of $($basinStart.Reading)"
-
-# Find neighbors
-
-
-# Get Next Unlinked Basin Member
-Do {
-    $basinStart = $basinMembers.where{ $null -eq $_.BasinId } | Select -First 1
+ForEach($p in $lowPoints) {
     
-    # Write-Host "Processing $($basinStart.MemberId)"
+    $line = $p.Line
+    $col = $p.Column
+    $val = $p.Reading
 
-    # Do any of my neighbors have a BasinId yet?
-    # Write-Host "     Looking for Neighbors"
-    $neighbors = $basinMembers.where{
-        ($_.Col -eq $basinStart.Col -and [Math]::Abs($_.Line - $basinStart.Line) -eq 1) -or
-        ($_.Line -eq $basinStart.Line -and [Math]::Abs($_.Col - $basinStart.Col) -eq 1)
-    }
-
-    # Write-Host "          My neighbors are $($neighbors.MemberId -join ",")"
-    
-    If($neighbors.where{$_.BasinId}.Count -gt 0) {
-        # Write-Host "           My neighbors already have a basin id"
-        $guid = $neighbors[0].BasinId
-        # Write-Host "           Using Existing BasinId $guid"
+    If($line -eq 0) {
+        # Top Line, nothing above
+        $above = [Int]10
+        $below = [String]$grid[$line+1][$col] -as [Int]
+    } elseif ($line -eq $grid.Count-1) {
+        # Bottom line, nothing below
+        $above = [String]$($grid[$line-1][$col]) -as [Int]
+        $below = [Int]10
     } else {
-        # Write-Host "           None of my neighbors already have a basin id"
-        $guid = New-Guid
+        $above = [String]$($grid[$line-1][$col]) -as [Int]
+        $below = [String]$($grid[$line+1][$col]) -as [Int]
     }
-    # Write-Host "           Setting Self and All Neighbors to $guid"
-    $basinMembers.Where{ $_.MemberId -eq $basinStart.MemberId -or $_.MemberId -in ($neighbors.MemberId) }.ForEach{ $_.BasinId = $guid }
+ 
+    If($val -lt $above -and $val -lt $below) {
+        $p.Confirmed = $true
+    }
 
-    Write-Host "There are $($basinMembers.where{$Null -eq $_.BasinId}.count) members left..."
 
-} Until ($basinMembers.where{$null -eq $_.BasinId}.Count -eq 0)
+}
 
+$lowPoints = $lowPoints.where{ $_.Confirmed -eq $true } | Select Line, Column, Reading, @{Name="FoundNeighbors"; Expression={$false}}, @{Name="Source"; Expression={""}}
+
+$groups = New-Object System.Collections.ArrayList
+
+$totalLows = $lowPoints.Count
+$lows = 0
+
+ForEach($point in $lowPoints) {
+    
+    $lows++
+    # Write-Host "Looking at $lows of $totalLows"
+
+    [System.Collections.ArrayList]$allPoints = @($point)
+
+    Do {
+        $thisPoint = $allPoints.where({$_.FoundNeighbors -eq $false},'first')
+
+        # Write-Host "Looking at $($thisPoint.line)x$($thisPoint.column)"
+    
+        # Look up
+        If($thisPoint.Line -ne 0) {
+            $newLine = $thisPoint.line - 1
+            $newCol = $thisPoint.column
+            If(-Not($allPoints.where{$_.Line -eq $newLine -and $_.Column -eq $newCol})) {
+                # Write-Host "   Adding Up $newLine`x$newCol"
+                [Void]$allPoints.Add([PSCustomObject]@{ 
+                    "Line" = $newLine
+                    "Column" = $newCol
+                    "Reading" = [String]$($grid[$newLine][$newCol]) -as [Int]
+                    "FoundNeighbors" = $false
+                    # "Source" = "$($thisPoint.line)x$($thisPoint.Column)"
+                })
+            }
+        }
+
+        # Look Down
+        If($thisPoint.line -ne $grid.Count - 1) {
+            $newLine = $thisPoint.line + 1
+            $newCol = $thisPoint.column
+            If(-Not($allPoints.where{$_.Line -eq $newLine -and $_.Column -eq $newCol})) {
+                # Write-Host "   Adding Down $newLine`x$newCol"
+                [Void]$allPoints.Add([PSCustomObject]@{ 
+                    "Line" = $newLine
+                    "Column" = $newCol
+                    "Reading" = [String]$($grid[$newLine][$newCol]) -as [Int]
+                    "FoundNeighbors" = $false
+                    # "Source" = "$($thisPoint.line)x$($thisPoint.Column)"
+                })
+            }
+        }
+
+        # Look Left
+        If($thisPoint.column -ne 0) {
+            $newLine = $thisPoint.line
+            $newCol = $thisPoint.column - 1
+            If(-Not($allPoints.where{$_.Line -eq $newLine -and $_.Column -eq $newCol})) {
+                # Write-Host "   Adding Left $newLine`x$newCol"
+                [Void]$allPoints.Add([PSCustomObject]@{ 
+                    "Line" = $newLine
+                    "Column" = $newCol
+                    "Reading" = [String]$($grid[$newLine][$newCol]) -as [Int]
+                    "FoundNeighbors" = $false
+                    # "Source" = "$($thisPoint.line)x$($thisPoint.Column)"
+                })
+            }
+        }
+
+        # Look Right
+        If($thisPoint.column -ne $grid[0].Count - 1) {
+            $newLine = $thisPoint.line
+            $newCol = $thisPoint.column + 1
+            If(-Not($allPoints.where{$_.Line -eq $newLine -and $_.Column -eq $newCol})) {
+                # Write-Host "   Adding Right $newLine`x$newCol"
+                [Void]$allPoints.Add([PSCustomObject]@{ 
+                    "Line" = $newLine
+                    "Column" = $newCol
+                    "Reading" = [String]$($grid[$newLine][$newCol]) -as [Int]
+                    "FoundNeighbors" = $false
+                    # "Source" = "$($thisPoint.line)x$($thisPoint.Column)"
+                })
+            }
+        }
+        
+        $allPoints = $allPoints.where{ $_.Reading -ne 9 }
+
+        $allPoints.where({$_.Line -eq $thisPoint.line -and $_.Column -eq $thisPoint.Column},'first')[0].FoundNeighbors = $true
+           
+    } Until (-Not($allPoints.where({$_.FoundNeighbors -eq $false},'first')))
+
+    [Void]$groups.Add($allPoints.Count)
+
+}
 
 $product = 1
-$($basinMembers | Group-Object BasinId | Sort Count -Descending | Select -ExpandProperty Count -First 3).ForEach{
-    $product *= $_
-}
-$product
+$groups | Sort -Descending | Select -First 3 | % { $product *= $_ }
+$product | Out-Host
