@@ -57,7 +57,7 @@ $points = $dataIn.where{ $_ -match "\d{1,},\d{1,}" }.ForEach{
 
 For($y = 0; $y -le $height; $y++) {
     For($x = 0; $x -le $width; $x++) {
-        if($points.where{ $_.x -eq $x -and $_.y -eq $y}) { Write-Host "#" -NoNewline } else { Write-Host " " -NoNewline }
+        if($points.where({ $_.x -eq $x -and $_.y -eq $y},'first')) { Write-Host "#" -NoNewline } else { Write-Host " " -NoNewline }
     }
     Write-Host ""
 }
