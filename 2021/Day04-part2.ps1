@@ -1,4 +1,4 @@
-﻿$dataIn = Get-Content $PSScriptRoot\Day4-Input.txt
+﻿$dataIn = Get-Content $PSScriptRoot\Day04-Input.txt
 
 $balls = $dataIn[0] -split ","
 
