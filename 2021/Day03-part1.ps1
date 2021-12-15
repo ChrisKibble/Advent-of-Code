@@ -1,4 +1,4 @@
-﻿$input = get-content C:\temp\input3.txt
+﻿$input = get-content $PSScriptRoot\Day03-Input.txt
 
 [string]$g = [string]$e = ""
 $bit = [String[]]::New($input[0].Length)

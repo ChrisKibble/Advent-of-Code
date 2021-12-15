@@ -1,7 +1,5 @@
 ﻿Clear-Host 
 
-$data = get-content C:\temp\input3.txt
-
 [string]$ogr = [string]$co2 = [string]$bitString = ""
 
 For($i = 0; $i -lt $data[0].length; $i++) {
@@ -29,7 +27,7 @@ For($i = 0; $i -lt $data[0].length; $i++) {
 
 }
 
-$data = get-content C:\temp\input3.txt
+$data = get-content $PSScriptRoot\Day03-Input.txt
 
 For($i = 0; $i -lt $data[0].length; $i++) {
     
