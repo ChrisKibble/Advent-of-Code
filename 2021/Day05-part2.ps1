@@ -1,6 +1,6 @@
 ﻿Clear-Host
 
-$dataIn = Get-Content $PSScriptRoot\day5-input.txt
+$dataIn = Get-Content $PSScriptRoot\day05-input.txt
 
 $dataInx = @"
 0,9 -> 5,9

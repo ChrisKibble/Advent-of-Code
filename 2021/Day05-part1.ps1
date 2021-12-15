@@ -1,6 +1,6 @@
 ﻿Clear-Host
 
-$dataIn = Get-Content $PSScriptRoot\day5-input.txt
+$dataIn = Get-Content $PSScriptRoot\day05-input.txt
 
 $rxCoords = [regex]::New("(\d{1,}),(\d{1,}) -> (\d{1,}),(\d{1,})")
 
