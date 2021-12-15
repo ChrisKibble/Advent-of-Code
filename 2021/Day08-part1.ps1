@@ -2,7 +2,7 @@
 
 Get-Variable | Remove-Variable -ErrorAction SilentlyContinue
 
-$dataIn = Get-Content $PSScriptRoot\Day8-Input.txt
+$dataIn = Get-Content $PSScriptRoot\Day08-Input.txt
 
 # Easier to visualize this way, not really necessary
 $allData = ForEach($systemOutput in $dataIn) {
