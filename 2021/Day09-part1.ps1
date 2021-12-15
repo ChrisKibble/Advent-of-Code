@@ -10,7 +10,7 @@ $dataIn = @"
 9899965678
 "@ -split "`r`n"
 
-$dataIn = Get-Content "$PSScriptRoot\Day9-Input.txt"
+$dataIn = Get-Content "$PSScriptRoot\Day09-Input.txt"
 
 $grid = New-Object System.Collections.ArrayList
 $lowPoints = New-Object System.Collections.ArrayList
