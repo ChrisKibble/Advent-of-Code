@@ -15,15 +15,17 @@ $dataIn = @"
 2311944581
 "@ -split "`r`n"
 
-$dataIn = Get-Content $PSScriptRoot\Day15-Input.txt
+# $dataIn = Get-Content $PSScriptRoot\Day15-Input.txt
 
 $points = @{}
-$visited = [System.Collections.ArrayList]::New(@())
+#$visited = [System.Collections.ArrayList]::New(@())
+$visited = @{}
 
 For($rowNumber = 0; $rowNumber -lt $dataIn.length; $rowNumber++) {
     For($charNumber = 0; $charNumber -lt $dataIn[0].length; $charNumber++) {
         $coord = "$rowNumber`x$charNumber"
         $points.$coord = [Int]::MaxValue
+        $visited.$coord = 0
     }
 }
 
@@ -37,7 +39,7 @@ While($pointQueue.Count -gt 0) {
     # Get my next point
     $currentPoint = $pointQueue.Dequeue()
 
-    If($currentPoint -in $visited) {
+    If($visited.$currentPoint -eq 1) {
         continue
     }
 
@@ -53,7 +55,7 @@ While($pointQueue.Count -gt 0) {
     If($x -lt $dataIn[0].length-1) { $neighbors += "$($x+1)x$y" } # Neighbor Right
     If($y -lt $dataIn.length-1) { $neighbors += "$x`x$($y+1)" } # Neighbor Left
 
-    # Write-Host "I am at $currentNode ($x,$y). My cost is $startDistance."
+    # Write-Host "I am at $currentPoint ($x,$y). My cost is $startDistance."
 
     ForEach($neighbor in $neighbors) {
         If($points.$neighbor) {
@@ -69,10 +71,9 @@ While($pointQueue.Count -gt 0) {
         }
     }
 
-    [Void]$visited.Add($currentPoint)
+    $visited.$currentPoint = 1
 }
 
 $lastPos = "$($dataIn[0].length-1)x$($dataIn.length-1)"
 
 Write-Host "Shortest Path = $($points.$lastPos)"
-
