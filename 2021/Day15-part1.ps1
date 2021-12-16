@@ -15,7 +15,7 @@ $dataIn = @"
 2311944581
 "@ -split "`r`n"
 
-$dataIn = Get-Content $PSScriptRoot\Day15-Input.txt
+# $dataIn = Get-Content $PSScriptRoot\Day15-Input.txt
 
 $points = @{}
 $visited = @{}
@@ -62,6 +62,7 @@ Do {
             $ny = [Int]$neighbor.substring($neighbor.IndexOf("x")+1)
             $nVal = [String]$dataIn[$nx][$ny] -as [int]
             $nVal += $startDistance
+            $points.$neighbor = [Math]::Min($nVal,$points.$neighbor)
         }
     }
 
