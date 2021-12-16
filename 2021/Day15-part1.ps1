@@ -15,11 +15,10 @@ $dataIn = @"
 2311944581
 "@ -split "`r`n"
 
-# $dataIn = Get-Content $PSScriptRoot\Day15-Input.txt
+$dataIn = Get-Content $PSScriptRoot\Day15-Input.txt
 
 $points = @{}
-$visited = @{}
-$paths = @{}
+$visited = [System.Collections.ArrayList]::New(@())
 
 For($rowNumber = 0; $rowNumber -lt $dataIn.length; $rowNumber++) {
     For($charNumber = 0; $charNumber -lt $dataIn[0].length; $charNumber++) {
@@ -29,52 +28,51 @@ For($rowNumber = 0; $rowNumber -lt $dataIn.length; $rowNumber++) {
 }
 
 $points.'0x0' = 0
-$currentNode = "0x0"
-$paths.'0x0' = '0x0'
 
-$lastPos = "$($dataIn[0].length-1)x$($dataIn.length-1)"
+$pointQueue = [System.Collections.Generic.PriorityQueue[object, int]]::new()
+$pointQueue.Enqueue("0x0", 0)
 
-$i = 0
-Do {
+While($pointQueue.Count -gt 0) {
 
-    $i = $i +1 
-    Write-Host "I am at $currentNode and I've visited $($visited.count) nodes"
-    
-    $startDistance = $points.$currentNode
-    # # # Write-Host "Distance Value at this node is $startDistance"
+    # Get my next point
+    $currentPoint = $pointQueue.Dequeue()
 
-    $x = [Int]$currentNode.substring(0,$currentNode.IndexOf("x"))
-    $y = [Int]$currentNode.substring($currentNode.IndexOf("x")+1)
+    If($currentPoint -in $visited) {
+        continue
+    }
 
-    $moveOptions = @()
-    If($x -gt 0) { $moveOptions += "$($x-1)x$y" }
-    If($x -lt $dataIn[0].length-1) { $moveOptions += "$($x+1)x$y" }
-    If($y -gt 0) { $moveOptions += "$x`x$($y-1)" }        
-    If($y -lt $dataIn.length-1) { $moveOptions += "$x`x$($y+1)" }
+    $startDistance = $points.$currentPoint
+   
+    $x = [Int]$currentPoint.substring(0, $currentPoint.IndexOf('x'))
+    $y = [Int]$currentPoint.substring($currentPoint.IndexOf('x') + 1)
 
-    # $moveOptions = $moveOptions.where{$_ -notin $visited.Keys}
+    $neighbors = @()
+    If($x -gt 0) { $neighbors += "$($x-1)x$y" } # Neighbor Left
+    If($y -gt 0) { $neighbors += "$x`x$($y-1)" } # Neighbor Up
 
-    # Write-Host "My Neighbors are $($moveOptions -join " and ")"
+    If($x -lt $dataIn[0].length-1) { $neighbors += "$($x+1)x$y" } # Neighbor Right
+    If($y -lt $dataIn.length-1) { $neighbors += "$x`x$($y+1)" } # Neighbor Left
 
-    ForEach($neighbor in $moveOptions) {
-        if($points.$neighbor) {
+    # Write-Host "I am at $currentNode ($x,$y). My cost is $startDistance."
+
+    ForEach($neighbor in $neighbors) {
+        If($points.$neighbor) {
             $nx = [Int]$neighbor.substring(0,$neighbor.IndexOf("x"))
             $ny = [Int]$neighbor.substring($neighbor.IndexOf("x")+1)
             $nVal = [String]$dataIn[$nx][$ny] -as [int]
-            $nVal += $startDistance
-            $points.$neighbor = [Math]::Min($nVal,$points.$neighbor)
+            $nValTotal = $nVal + $startDistance
+            # Write-Host "  My neighbor at $neighbor ($nx,$ny) has a distance of $($points.$neighbor)."
+            # Write-Host "  The real distance for my neighbor is $nVal (for a total distance from 0x0 of $nValTotal)"
+            $neighborCost = [Math]::Min($nValTotal, $points.$neighbor)
+            $points.$neighbor = $neighborCost
+            $pointQueue.Enqueue($neighbor, $neighborCost)
         }
     }
 
-    $visited."$x`x$y" = $points."$x`x$y"
-    # Write-Host "$x`x$y is now visited."
-    $points.Remove("$x`x$y")
-    
-    $currentNode = $points.GetEnumerator() | Sort-Object Value | Select -First 1 -ExpandProperty Name
-    # Write-Host "Moving to $currentNode"
+    [Void]$visited.Add($currentPoint)
+}
 
-    # if($i -eq 2) { break }
-} Until (-Not($currentNode))
+$lastPos = "$($dataIn[0].length-1)x$($dataIn.length-1)"
 
-Write-Host "Shortest Path = $($visited.$lastPos)"
+Write-Host "Shortest Path = $($points.$lastPos)"
 
