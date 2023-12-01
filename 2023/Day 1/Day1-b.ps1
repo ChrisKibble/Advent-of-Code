@@ -1,12 +1,13 @@
 Clear-Host
-Write-Host "*** START ***"
-Function WordsToNumbers {
+
+Function Convert-WordToNumber {
     [CmdLetBinding()]
     Param(
-        [String]$entry
+        [Parameter(Mandatory)]
+        [String]$Word
     )
 
-    Write-Verbose "          Starting WordsToNumbers with Input '$entry'"
+    Write-Verbose "      Starting Convert-WordToNumber with Input '$word'"
 
     $numbers = @{
         "one" = "1"
@@ -20,40 +21,12 @@ Function WordsToNumbers {
         "nine" = "9"
     }
 
-    ## Replace First Word
-    $firstWordToReplace = $numbers.Keys.ForEach{
-        [PSCustomObject]@{
-            Word = $_
-            Position = $entry.IndexOf($_)
-        }
-    } | Where-Object { $_.Position -ge 0 } | Sort-Object Position | Select-Object -First 1 -ExpandProperty Word
- 
-    if($FirstWordToReplace) {
-        $NumberValue = $numbers.$FirstWordToReplace
-        
-        Write-Verbose "               Replace $FirstWordToReplace with $NumberValue"
-        [RegEx]$Replacement = $FirstWordToReplace
-        $entry = $Replacement.Replace($entry, $NumberValue, 1)
-        Write-Verbose "               Entry is now: $entry"
+    if($numbers.$word) {
+        Return $numbers.$word
+    } Else {
+        Return $Word
     }
 
-    ## Replace Last Word
-    $LastWordToReplace = $numbers.Keys.ForEach{
-        [PSCustomObject]@{
-            Word = $_
-            Position = $entry.IndexOf($_)
-        }
-    } | Where-Object { $_.Position -ge 0 } | Sort-Object Position | Select-Object -Last 1 -ExpandProperty Word
-    
-    If($LastWordToReplace) {
-        $rtl = [Text.RegularExpressions.RegexOptions]::RightToLeft
-        $NumberValue = $numbers.$LastWordToReplace
-        Write-Verbose "               Replace $LastWordToReplace with $NumberValue"
-        $entry = [RegEx]::Replace($entry, $LastWordToReplace, $NumberValue, $rtl)
-    }
-
-    Write-Verbose "               Final Entry: $entry"
-    $entry
 }
 
 Function Calibrate {
@@ -64,36 +37,28 @@ Function Calibrate {
 
     Write-Verbose "Starting Calibrate"
 
-    $rxFirstNumber = [RegEx]::New('(?m)^(?:.*?)(\d)') 
-    $rxLastNumber = [RegEx]::New('(?m)(?:.*)(\d)')
-    
-    $outputNumbers = ForEach($line in $document) {
-        
-        $start = $line
+    $rxNumbers = [RegEx]::New('(?=(\d|one|two|three|four|five|six|seven|eight|nine))')
 
-        Write-Verbose "     Processing $line. Converting Words."
-        $line = WordsToNumbers $line
-        Write-Verbose "     Updated Entry is $line"
-        
-        $firstNum = $rxFirstNumber.Match($line).Groups[1].Value
-        $lastNum = $rxLastNumber.Match($line).Groups[1].Value
-        
-        $finalNumber = [Int]"$firstNum$lastNum"
-
-        Write-Verbose "     Final Number: $firstNum$lastNum"
-        $finalNumber
+    $allNumbers = ForEach($line in $document) {
+        Write-Verbose "  Searching $line for numbers..."
+        $numberList = $rxNumbers.Matches($line)
+        $leftNumber = Convert-WordToNumber $numberList[0].Groups[1].Value
+        $rightNumber = Convert-WordToNumber $numberList[-1].Groups[1].Value
+        [Int]$finalNumber = "$leftNumber$rightNumber"
+        Write-Verbose "    Left Number = $LeftNumber"
+        Write-Verbose "    Right Number = $RightNumber"
+        Write-Verbose "    Final Number = $FinalNumber"
+        $FinalNumber
     }
 
-    ($outputNumbers | Measure-Object -Sum).Sum
-
+    ($allNumbers | Measure-Object -Sum).Sum
+    
 }
 
-[String[]]$sampleData = Get-Content .\input-a.txt
+#[String[]]$sampleData = Get-Content .\input-b.txt
+#Calibrate $SampleData
 
-Calibrate $SampleData -Verbose
-
-# $test = 'one59twoeightwox'
-# WordsToNumbers $test -Verbose
+[String[]]$fullDataSet = Get-Content .\input-a.txt
+Calibrate $fullDataSet
 
 
-### Not 53412
