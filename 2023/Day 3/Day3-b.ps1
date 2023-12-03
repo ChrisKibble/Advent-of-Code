@@ -27,14 +27,6 @@ $starIndexes = $starChars.ForEach{
     
     [PSCustomObject]@{
         StarIndex = $Position
-        L = $leftPosition
-        R = $rightPosition
-        A = $abovePosition
-        B = $belowPosition
-        dtl = $diagTopLeft
-        dtr = $diagTopRight
-        dbl = $diagBottomLeft
-        dbr = $diagBottomRight
         Positions = [Int[]]@($position, $leftPosition, $rightPosition, $abovePosition, $belowPosition, $diagTopLeft, $diagTopRight, $diagBottomLeft, $diagBottomRight)
     }
 }
