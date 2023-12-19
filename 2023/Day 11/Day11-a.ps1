@@ -68,7 +68,7 @@ $galaxies.GetEnumerator() | Sort-Object | ForEach-Object {
     $startX = $_.Value.X
     $startY = $_.Value.Y
     $galaxies.GetEnumerator().Where{$_.Key -gt $StartKey}.ForEach{
-        $EndKey = $_.Key
+        # $EndKey = $_.Key
         $EndX = $_.Value.X
         $EndY = $_.Value.Y
         $PathLen = [Math]::Abs($StartX - $EndX) + [Math]::Abs($StartY-$EndY)
