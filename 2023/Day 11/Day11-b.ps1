@@ -31,15 +31,15 @@ Function Get-ExpandedUniverse {
 
     [System.Collections.Generic.List[String]]$map = ForEach($line in $map) {
         $WormHoleColumns.ForEach{
-            $line = $line.Insert($_,'w')
+            $line = $line.Remove($_,1).Insert($_,'w')
         }
-        $line
-        $i++
         if($line -notmatch "[^\.w]") {
             $line -replace '\.', 'w'
             $WormHoleRows.Add($i) | Out-Null
-            $i++
+        } Else {
+            $line
         }
+        $i++
     }
 
     Return [PSCustomObject]@{
@@ -50,7 +50,7 @@ Function Get-ExpandedUniverse {
 
 }
 
-$map = Get-Content $PSScriptRoot\Sample.txt
+$map = Get-Content $PSScriptRoot\Input.txt
 
 Write-Host "[$(Get-Date)] I have the map in memory"
 
@@ -74,21 +74,21 @@ For($index = 0; $index -lt $map.Count; $index++) {
 
 Write-Host "[$(Get-Date)] I have all galaxies"
 
-[Int]$TotalLen = 0
-$galaxies.GetEnumerator() | Sort-Object | Where-Object { $_.Key -in (6,7) } | ForEach-Object {
+[Int64]$TotalLen = 0
+$galaxies.GetEnumerator() | Sort-Object | ForEach-Object {
     $StartKey = $_.Key
     $startX = $_.Value.X
     $startY = $_.Value.Y
     $galaxies.GetEnumerator().Where{$_.Key -gt $StartKey}.ForEach{
-        $EndKey = $_.Key
+        # $EndKey = $_.Key
         $EndX = $_.Value.X
         $EndY = $_.Value.Y
         $PathLen = [Math]::Abs($StartX - $EndX) + [Math]::Abs($StartY-$EndY)
         [Array]$RowChanges = $universe.WormholeRows.Where{ $_ -gt [Math]::Min($StartX, $EndX) -and $_ -lt [Math]::Max($StartX, $EndX) }
         [Array]$ColumnChanges = $universe.WormholeColumns.Where{ $_ -gt [Math]::Min($StartY, $EndY) -and $_ -lt [Math]::Max($StartY, $EndY) }
         [Int]$Wormholes = $RowChanges.Count + $ColumnChanges.Count
-        $PathLen = ($PathLen - $Wormholes) + (10 * $Wormholes)
-        Write-Host "The path from $StartX`x$startY ($StartKey) to $endX`x$EndY ($EndKey) is $PathLen with $wormholes wormholes"
+        $PathLen = ($PathLen - $Wormholes) + (1000000 * $Wormholes)
+        # Write-Host "The path from $StartX`x$startY ($StartKey) to $endX`x$EndY ($EndKey) is $PathLen with $wormholes wormholes"
         $TotalLen += $PathLen
     }
 }
@@ -97,4 +97,15 @@ Write-Host "[$(Get-Date)] I've mapped all paths"
 
 Write-Host "There are $TotalLen Paths (Summed)"
 
-$map | Out-host
+<#
+$numberedMap = For($i = 0; $i -lt $map.Count; $i++) {
+    $line = $map[$i]
+    $galaxies.GetEnumerator() | Where-Object { $_.Value.X -eq $i } | ForEach-Object {
+        $line = $line.Remove($_.Value.Y,1).Insert($_.Value.Y, $_.Name)
+    }
+    $line
+}
+$numberedMap | Out-Host 
+#>
+
+# $map | Out-host
