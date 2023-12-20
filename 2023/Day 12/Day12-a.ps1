@@ -1,76 +1,50 @@
 Clear-Host
 Get-Date
 Write-Host "---"
-Function PermutateArrays {
 
-    [CmdLetBinding()]
-    Param(
-        $PermuteLeft,
-        $PermuteRight
-    )
-
-    [System.Collections.Generic.List[String]]$FullArray = ForEach($l in $permuteLeft) {
-        ForEach($r in $permuteRight) {
-            "$l$r"
-        }
-    }
-
-    Return $FullArray
-
-}
 Function Get-Permutations {
 
     [CmdLetBinding()]
     Param(
-        [Int]$NumberOfUnknowns
+        [Parameter(Mandatory=$True)]
+        [Int]$StringLength
     )
 
-    Write-Verbose "[$(Get-Date)] [Starting] Getting Permutations for $NumberOfUnknowns"
+    Write-Verbose "I need to generate all combinations for $StringLength."
 
-    $global:savedPerms[1] = @('.#','#.')
-
-    If($global:savedPerm.$NumberOfUnknowns) {
-        Write-Verbose "[$(Get-Date)] Returning from Cache`r`n"
-        Return $global:savedPerms[$NumberOfUnknowns]
+    If($global:savedPerms[$StringLength]) {
+        Write-Verbose "Returning from Cache"
+        Return $global:savedPerms[$StringLength]
     }
 
-    Write-Verbose "[$(Get-Date)] This value isn't yet cached."
+    [String]$binaryString = "1" * $StringLength
 
-    $loopCount = 0
-    While(-not($global:savedPerms[$NumberOfUnknowns])) {
-        $loopCount++
+    [Int64]$BinaryAsInt = [System.Convert]::ToInt64($binaryString,2)
 
-        $availablePermutations = $global:savedPerms.GetEnumerator() | Select-Object -ExpandProperty Name
-        $firstNumber = $availablePermutations | Where-Object { $_ -le $numberofUnknowns } | Sort-Object | Select -Last 1
-        $secondNumber = $availablePermutations | Where-Object { $_ -le ($numberofUnknowns-$firstNumber) } | Sort-Object | Select -last 1
-        $newPermutation = $firstNumber + $secondNumber
+    $permutations = For($index = 0; $index -le $BinaryAsInt; $index++) {
+        $binaryString = [System.Convert]::ToString($index, 2).PadLeft($StringLength,'0')
+        $binaryString -replace '0','.' -replace '1','#'
+    }
+    
+    Write-Verbose "Returning"
+    Return $permutations
 
-        Write-Verbose "[$(Get-Date)] Looking for $numberofunknowns. Available Permutations are $($availablePermutations -join ',')"
-        Write-Verbose "[$(Get-Date)]   Highest number below $numberofunknowns is $firstNumber (FirstNumber)"
-        Write-Verbose "[$(Get-Date)]   Highest number we can add to FirstNumber to get closest to $numberofunknowns is $secondnumber (SecondNumber)"
-        Write-Verbose "[$(Get-Date)]   This will give us the permutations for $newPermutation"
-
-        $newPermutation = $firstNumber + $secondNumber
-        $NewRange = PermutateArrays $global:savedPerms[$firstNumber] $global:savedPerms[$secondNumber]
-        $global:savedPerms[$newPermutation] = $NewRange
-
-        If($loopCount -gt 10) { Throw "Whoops" }
-    } 
-
-    Return $global:savedPerms[$NumberOfUnknowns]
 }
+
 Function Get-Arrangements {
 
     [CmdLetBinding()]
     Param(
+        [Parameter(Mandatory=$True)]
         [String]$Record
     )
-
+   
     $rxCharacterGroups = [RegEx]::New('(\?{1,}|\.{1,}|#{1,})')
+    $rxCharacterGroups = [RegEx]::New('(#{1,})')
     $rxQuestionMarks = [RegEx]::New('\?')
 
-    $RecordData = $Record.Substring(0,$Record.IndexOf(' ')-1)
-    $RecordCounts = $Record.Substring($RecordData.Length+2) -split ','
+    $RecordData = $Record.Substring(0,$Record.IndexOf(' '))
+    $RecordCounts = $Record.Substring($RecordData.Length+1) -split ','
     $NumberOfGroups = $RecordCounts.Count
     
     [Array]$Unknowns = $rxQuestionMarks.Matches($RecordData) | Select-Object -ExpandProperty Index    
@@ -81,24 +55,80 @@ Function Get-Arrangements {
     Write-Verbose "  Counts: [$($RecordCounts -join ',')] - $NumberOfGroups Groups"
     Write-Verbose "  Unknowns: [$($Unknowns -join ',')] - $UnknownCount Unknowns"
 
-    $permutations = Get-Permutations -NumberOfUnknowns $UnknownCount
+    if($null -ne $global:savedPerms[$UnknownCount]) {
+        Write-Verbose "  We already have these permutations saved in cache."
+    } Else {
+        $HighestPerm = $global:savedPerms.GetEnumerator() | Select-Object -ExpandProperty Name | Where-Object { $_ -gt $UnknownCount } | Sort-Object | Select-Object -First 1
+        Write-Verbose "  Getting Permutations for $UnknownCount from $HighestPerm"
+        $global:savedPerms[$UnknownCount] = $global:savedPerms[$HighestPerm].ForEach{
+            $_.Substring(0,$UnknownCount)
+        }
+        Write-Verbose "    Making Unique"
+        $global:savedPerms[$UnknownCount] = $global:savedPerms[$UnknownCount] | Sort-Object -Unique
+    }
 
-    $permutations | FT | Out-host
+    $thisPermutationGroup = $global:savedPerms[$UnknownCount]
 
     Write-Verbose "  Getting List of Possible Values"
-    ForEach($test in $permutations) {
+    $PossibleValues = ForEach($test in $thisPermutationGroup) {
         $testValue = $RecordData
         For($index = 0; $index -lt $UnknownCount; $index++) {
             $indexToReplace = $Unknowns[$index]
             $replacementChar = $test[$index]
             $testValue = $testValue.Remove($indexToReplace,1).Insert($indexToReplace,$replacementChar)
         }
+
+        [Array]$hashGroups = $rxCharacterGroups.Matches($testValue)
+        If($hashGroups.Count -eq $NumberOfGroups) {
+            # Number of hash groups matches the number we're looking for
+            $ConfirmedMatch = $True
+            For($index = 0; $index -lt $hashGroups.count; $index++) {
+                If($RecordCounts[$index] -ne $hashGroups[$index].Length) {
+                    $ConfirmedMatch = $False
+                    break
+                }
+            }
+            If($ConfirmedMatch) { 
+                $testValue
+            }
+        }
     }
+
+    Write-Verbose "Found $($PossibleValues.Count) Possible Values"
+
+    Return $PossibleValues.Count
 
 }
 
-$global:savedPerms = @{}
-
 $logs = Get-Content $PSScriptRoot\Input.txt
 
-Get-Arrangements ".??..??...?##. 1,1,3" -Verbose  # 4 different arrangements
+$lineUnknowns = $logs.ForEach{ 
+    ($_.ToCharArray().Where{ $_ -eq '?' }).Count
+}
+
+[Int]$lineUnknownsMax = $lineUnknowns | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+
+$global:savedPerms = @{}
+$global:savedPerms[$lineUnknownsMax] = Get-Permutations -StringLength $lineUnknownsMax -Verbose
+
+# Go through the input file backwards by question mark count to generate the secondary permutations faster.
+
+$logData = $logs.ForEach{
+    [PSCustomObject]@{
+        Line = $_
+        Questions = ($_.ToCharArray().Where{ $_ -eq '?' }).Count
+    }
+}
+
+$i = 0
+[Int]$sum = 0
+$logdata | Sort-Object Questions -Descending | ForEach-Object {
+    $i++
+    Write-Host $i
+    $count = Get-Arrangements $_.Line -Verbose  
+    $sum += $count
+}
+
+Write-Output $sum
+
+
