@@ -108,7 +108,8 @@ $lineUnknowns = $logs.ForEach{
 
 [Int]$lineUnknownsMax = $lineUnknowns | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
 
-$global:savedPerms = @{}
+If(-Not($global:savedPerms)) { $global:savedPerms = @{} }
+
 $global:savedPerms[$lineUnknownsMax] = Get-Permutations -StringLength $lineUnknownsMax -Verbose
 
 # Go through the input file backwards by question mark count to generate the secondary permutations faster.
