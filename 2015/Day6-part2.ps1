@@ -27,27 +27,20 @@ $Instructions | ForEach-Object {
 
             Switch ($inst) {
                 "turn on" {
-                    If(-not $lightIsOn) { 
-                        $grid[$x][$y] = 1
-                        $lightsOn++
-                    }
+                    $grid[$x][$y]++
+                    $lightsOn++
                     break
                 }
                 "turn off" {
                     If($lightIsOn) {
-                        $grid[$x][$y] = 0
-                        $lightsOn--    
+                        $grid[$x][$y]--
+                        $lightsOn--
                     }
                     break
                 }
                 "toggle" {
-                    If($lightIsOn) {
-                        $grid[$x][$y] = 0
-                        $lightsOn--    
-                    } Else {
-                        $grid[$x][$y] = 1
-                        $lightsOn++
-                    }
+                    $grid[$x][$y] = $grid[$x][$y] + 2
+                    $lightsOn = $lightsOn + 2
                     break
                 }
             }
