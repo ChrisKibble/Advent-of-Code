@@ -90,7 +90,6 @@ Function Get-SimilarityScore {
 
 # $Lists = Get-Lists $sample
 $Lists = Get-Lists (Get-Content "$PSScriptRoot\Day 1 - Input.txt")
-
 $Score = Get-SimilarityScore -ListLeft $lists.List0 -ListRight $lists.List1
 
 Write-Output "It's $Score !"
