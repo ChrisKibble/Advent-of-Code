@@ -17,6 +17,8 @@ ForEach($move in $instructions) {
     } Else {
         [Int]$change = $notDirection
     }
+
+    [Int]$change = $notDirection % 100
     
     If($direction -eq "L") { $Change = $Change * -1 }
     $dialPosition += $Change
