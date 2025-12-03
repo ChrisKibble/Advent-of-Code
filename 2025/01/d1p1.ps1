@@ -11,12 +11,6 @@ ForEach($move in $instructions) {
     
     $direction = $move.substring(0,1)
     $notDirection = $move.substring(1)
-    
-    if($notDirection.Length -gt 2) {
-        [Int]$change = $notDirection.Substring($notDirection.Length-2) # Only grab the last two characters because we don't care how many 1000s or 100s it rolls because it'd end up in the same spot.
-    } Else {
-        [Int]$change = $notDirection
-    }
 
     [Int]$change = $notDirection % 100
     
