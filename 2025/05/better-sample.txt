@@ -1,0 +1,26 @@
+# Shares Margin Right
+205-300
+
+# Should be dropped since it's in the larger range below
+10-30
+
+# Shares Margin Right
+300-303
+
+# One Large Range
+1-100
+
+# Just some range
+120-150
+
+# Shares margin Left
+200-205
+
+# Overlaps Left of 120-150 range
+110-121
+
+# Overlaps Right of 120-150 range
+145-158
+
+# Overlaps Right the 145-158 range
+156-200
