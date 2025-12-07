@@ -5,34 +5,59 @@ $inputFile = "$PSScriptRoot\input.txt"
 
 $Instructions = Get-Content $inputFile
 
-$rxDigitGroups = [RegEx]::New('(\d{1,})(?: |$)')
+$Map = [RegEx]::Matches($instructions[-1], '((?:\*|\+)\s{1,})') | Select-Object `
+    @{Name='StartIndex';Expression={$_.Index}}, `
+    @{Name='EndIndex';Expression={$_.Index + $_.Length - 2}}, `
+    @{Name='Operation';Expression={$_.Value.Trim()}}
 
-[Array]$Arithmetic = $instructions[-1] -split "\s{1,}"
 
-[System.Collections.Generic.List[System.Collections.Generic.List[Int64]]]$Numbers = @()
+[System.Collections.Generic.List[String]]$Numbers = @()
 
+$RightMargin = -1
 ForEach($Entry in $Instructions.Where{ $_.TrimStart() -match "\d"}) {
-    [System.Collections.Generic.List[Int64]]$Values = $rxDigitGroups.Matches($entry).Value
-    $Numbers.Add($Values)
+    $Numbers.Add($Entry)
+    $RightMargin = [Math]::Max($RightMargin, $Entry.Length)
 }
 
-[Int64]$Total = 0
-For($i = 0; $i -lt $Numbers[0].Count; $i++) {
-    $Operation = $Arithmetic[$i]
-    $OperationTotal = 0
-    $FirstOp = $True #Dirty way to handle multiplication
-    ForEach($Entry in $Numbers) {
-        If($FirstOp) {
-            [Int64]$OperationTotal = $Entry[$i]
-            $FirstOp = $False
-        } Else {
-            Switch($Operation) {
-                '+' { $OperationTotal += $Entry[$i] }
-                '*' { $OperationTotal *= $Entry[$i] }
+# The arithmetic line doesn't have padding on the end so we need to make sure the final
+# map entry goes out all the way to the rightmost character of any line.
+$map[-1].EndIndex = $RightMargin - 1
+
+[Int64]$GrandTotal = 0
+
+ForEach($group in $map) {
+    [System.Collections.Generic.List[String]]$GroupNumberList = @()
+    For($i = $group.StartIndex; $i -le $group.EndIndex; $i++) {
+        Write-Verbose "Processing Group Column $i"
+        [String]$ThisNumber = '' 
+        ForEach($Entry in $Numbers) {
+            $ThisDigit = $Entry[$i]
+            If($ThisDigit -and $ThisDigit -ne ' ') {
+                $ThisNumber += $ThisDigit
             }
         }
+        $GroupNumberList.Add($ThisNumber)
     }
-    $Total += $OperationTotal
+
+    Write-Verbose "Done with Group"
+
+    Switch ($group.Operation) {
+        '*' {
+            [Int64]$Total = 1
+            ForEach($i in $GroupNumberList) {
+                $Total *= [Int]$i
+            }
+        }
+        '+' {
+            [Int64]$Total = 0
+            ForEach($i in $GroupNumberList) {
+                $Total += [Int]$i
+            }
+        }        
+    }
+
+    Write-Verbose "T = $Total"
+    $GrandTotal += $Total
 }
 
-Write-Host $Total
+$GrandTotal
