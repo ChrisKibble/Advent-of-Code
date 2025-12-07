@@ -23,7 +23,7 @@ $ProjectCode = @'
 $inputFile = "$PSScriptRoot\sample.txt"
 # $inputFile = "$PSScriptRoot\input.txt"
 
-$Instructions = Get-Content $inputFile
+$Instructions = Get-Content $inputFilew
 '@
 
 Add-Content -Path "$ProjectFolder\input.txt" -Value ''
